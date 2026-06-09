@@ -15,6 +15,7 @@
       --blue-dark: #1d4ed8;
       --output-bg: #eef2ff;
       --num: #4b5563;
+      --success: #16a34a;
     }
 
     * {
@@ -71,10 +72,28 @@
       background: var(--blue);
       color: white;
       cursor: pointer;
+      transition: background 0.2s ease;
     }
 
     button:hover {
       background: var(--blue-dark);
+    }
+
+    button.copy-btn {
+      background: #374151;
+      margin-left: 8px;
+    }
+
+    button.copy-btn:hover {
+      background: #111827;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
     }
 
     .output {
@@ -109,7 +128,7 @@
     }
 
     .char-row {
-      margin-bottom: 10px; /* extra visual spacing before the numbers */
+      margin-bottom: 10px;
     }
 
     .cell {
@@ -135,6 +154,14 @@
       color: var(--num);
       min-height: 1.2em;
     }
+
+    .status {
+      margin-left: 10px;
+      font-size: 14px;
+      color: var(--success);
+      font-weight: 600;
+      min-height: 1em;
+    }
   </style>
 </head>
 <body>
@@ -149,8 +176,13 @@ D:
 E:
 F:
 A:F:G:E:C:"></textarea>
-    <br />
-    <button onclick="extractLetters()">Extract A-D before colon</button>
+
+    <div class="button-row">
+      <button onclick="extractLetters()">Extract A-D before colon</button>
+      <button class="copy-btn" onclick="copyOutput('output1', 'status1')">Copy output</button>
+      <span id="status1" class="status"></span>
+    </div>
+
     <div class="output" id="output1"></div>
   </div>
 
@@ -161,8 +193,13 @@ A:F:G:E:C:"></textarea>
 HAUIOK
 HABIOK
 HAUIOK"></textarea>
-    <br />
-    <button onclick="compareLines()">Compare lines</button>
+
+    <div class="button-row">
+      <button onclick="compareLines()">Compare lines</button>
+      <button class="copy-btn" onclick="copyOutput('output2', 'status2')">Copy output</button>
+      <span id="status2" class="status"></span>
+    </div>
+
     <div class="output" id="output2"></div>
   </div>
 
@@ -171,6 +208,7 @@ HAUIOK"></textarea>
       const text = document.getElementById("inputText").value;
       const matches = text.match(/[A-D](?=:)/g) || [];
       renderWithIndexes(matches.join(""), "output1");
+      clearStatus("status1");
     }
 
     function compareLines() {
@@ -178,7 +216,8 @@ HAUIOK"></textarea>
       const lines = raw.split(/\r?\n/).filter(line => line.length > 0);
 
       if (lines.length === 0) {
-        document.getElementById("output2").innerHTML = '<span class="empty">Nothing to show yet.</span>';
+        setEmptyOutput("output2");
+        clearStatus("status2");
         return;
       }
 
@@ -193,21 +232,19 @@ HAUIOK"></textarea>
       }
 
       renderWithIndexes(result, "output2");
+      clearStatus("status2");
     }
 
     function renderWithIndexes(text, outputId) {
       const output = document.getElementById(outputId);
 
       if (!text || text.length === 0) {
-        output.innerHTML = '<span class="empty">Nothing to show yet.</span>';
+        setEmptyOutput(outputId);
         return;
       }
 
       const count = text.length;
       const digits = String(count).length;
-
-      // Give each character enough width to center both the character and its index.
-      // This stays flexible for 1-digit, 2-digit, and 3-digit indexes.
       const cellWidth = Math.max(2.2, digits + 0.8);
 
       let charRow = '<div class="index-grid char-row" style="--count:' + count + '; --cell-width:' + cellWidth + 'ch;">';
@@ -224,6 +261,41 @@ HAUIOK"></textarea>
       numRow += "</div>";
 
       output.innerHTML = `<div class="indexed-wrap">${charRow}${numRow}</div>`;
+      output.dataset.copyText = text;
+    }
+
+    function copyOutput(outputId, statusId) {
+      const output = document.getElementById(outputId);
+      const text = output.dataset.copyText || "";
+
+      if (!text) {
+        showStatus(statusId, "Nothing to copy.");
+        return;
+      }
+
+      navigator.clipboard.writeText(text)
+        .then(() => showStatus(statusId, "Copied!"))
+        .catch(() => showStatus(statusId, "Copy failed."));
+    }
+
+    function setEmptyOutput(outputId) {
+      const output = document.getElementById(outputId);
+      output.innerHTML = '<span class="empty">Nothing to show yet.</span>';
+      output.dataset.copyText = "";
+    }
+
+    function showStatus(statusId, message) {
+      const status = document.getElementById(statusId);
+      status.textContent = message;
+      setTimeout(() => {
+        if (status.textContent === message) {
+          status.textContent = "";
+        }
+      }, 1500);
+    }
+
+    function clearStatus(statusId) {
+      document.getElementById(statusId).textContent = "";
     }
 
     function escapeHtml(str) {
@@ -234,6 +306,10 @@ HAUIOK"></textarea>
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#39;");
     }
+
+    // Initialize empty states
+    setEmptyOutput("output1");
+    setEmptyOutput("output2");
   </script>
 </body>
 </html>

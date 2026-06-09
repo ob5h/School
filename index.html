@@ -16,6 +16,7 @@
       --output-bg: #eef2ff;
       --num: #4b5563;
       --success: #16a34a;
+      --majority: #dc2626;
     }
 
     * {
@@ -58,7 +59,6 @@
       border: 1px solid var(--line);
       border-radius: 8px;
       resize: vertical;
-      box-sizing: border-box;
       font-family: inherit;
       background: #fff;
     }
@@ -108,7 +108,6 @@
     .empty {
       color: var(--muted);
       font-style: italic;
-      font-family: inherit;
       font-size: 16px;
     }
 
@@ -147,6 +146,10 @@
       font-weight: 600;
       color: #111827;
       min-height: 1.4em;
+    }
+
+    .char-cell.majority {
+      color: var(--majority);
     }
 
     .num-cell {
@@ -201,6 +204,14 @@ HAUIOK"></textarea>
     </div>
 
     <div class="output" id="output2"></div>
+
+    <div class="button-row">
+      <button onclick="majorityWins()">Majority wins</button>
+      <button class="copy-btn" onclick="copyOutput('output3', 'status3')">Copy output</button>
+      <span id="status3" class="status"></span>
+    </div>
+
+    <div class="output" id="output3"></div>
   </div>
 
   <script>
@@ -235,7 +246,61 @@ HAUIOK"></textarea>
       clearStatus("status2");
     }
 
-    function renderWithIndexes(text, outputId) {
+    function majorityWins() {
+      const raw = document.getElementById("compareText").value;
+      const lines = raw.split(/\r?\n/).filter(line => line.length > 0);
+
+      if (lines.length === 0) {
+        setEmptyOutput("output3");
+        clearStatus("status3");
+        return;
+      }
+
+      const maxLen = Math.max(...lines.map(line => line.length));
+      let result = "";
+      const majorityFlags = [];
+
+      for (let i = 0; i < maxLen; i++) {
+        const counts = new Map();
+        let total = 0;
+
+        for (const line of lines) {
+          const ch = line[i];
+          if (ch !== undefined) {
+            counts.set(ch, (counts.get(ch) || 0) + 1);
+            total++;
+          }
+        }
+
+        let bestChar = null;
+        let bestCount = 0;
+        let tie = false;
+
+        for (const [ch, count] of counts.entries()) {
+          if (count > bestCount) {
+            bestChar = ch;
+            bestCount = count;
+            tie = false;
+          } else if (count === bestCount) {
+            tie = true;
+          }
+        }
+
+        const hasMajority = bestChar !== null && bestCount > total / 2 && !tie;
+        if (hasMajority) {
+          result += bestChar;
+          majorityFlags.push(true);
+        } else {
+          result += "E";
+          majorityFlags.push(false);
+        }
+      }
+
+      renderWithIndexes(result, "output3", majorityFlags);
+      clearStatus("status3");
+    }
+
+    function renderWithIndexes(text, outputId, highlightFlags = []) {
       const output = document.getElementById(outputId);
 
       if (!text || text.length === 0) {
@@ -253,7 +318,8 @@ HAUIOK"></textarea>
       for (let i = 0; i < text.length; i++) {
         const ch = text[i];
         const displayChar = ch === " " ? "&nbsp;" : escapeHtml(ch);
-        charRow += `<div class="cell char-cell">${displayChar}</div>`;
+        const majorityClass = highlightFlags[i] ? " majority" : "";
+        charRow += `<div class="cell char-cell${majorityClass}">${displayChar}</div>`;
         numRow += `<div class="cell num-cell">${i + 1}</div>`;
       }
 
@@ -307,9 +373,9 @@ HAUIOK"></textarea>
         .replace(/'/g, "&#39;");
     }
 
-    // Initialize empty states
     setEmptyOutput("output1");
     setEmptyOutput("output2");
+    setEmptyOutput("output3");
   </script>
 </body>
 </html>

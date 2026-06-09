@@ -5,77 +5,42 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Text Tools</title>
   <style>
+    :root {
+      --bg: #f7f7f7;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --line: #d1d5db;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --output-bg: #eef2ff;
+      --num: #4b5563;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: Arial, sans-serif;
-      max-width: 900px;
+      max-width: 980px;
       margin: 40px auto;
       padding: 20px;
-      background: #f7f7f7;
+      background: var(--bg);
+      color: var(--text);
     }
 
     .card {
-      background: white;
+      background: var(--card);
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
       margin-bottom: 20px;
     }
 
-    textarea {
-      width: 100%;
-      height: 160px;
-      padding: 12px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      resize: vertical;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-
-    button {
-      margin-top: 12px;
-      padding: 10px 16px;
-      font-size: 16px;
-      border: none;
-      border-radius: 8px;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #1d4ed8;
-    }
-
-    .output {
-      margin-top: 16px;
-      padding: 12px;
-      background: #eef2ff;
-      border-radius: 8px;
-      min-height: 28px;
-      overflow-x: auto;
-    }
-
-    .char-line, .num-line {
-      display: flex;
-      gap: 0;
-      white-space: pre;
-      font-family: monospace;
-      font-size: 20px;
-      line-height: 1.2;
-    }
-
-    .num-line {
-      font-size: 14px;
-      color: #4b5563;
-      margin-top: 4px;
-    }
-
-    .char-cell, .num-cell {
-      width: 1ch;
-      text-align: center;
-      flex: 0 0 1ch;
+    h1, h2 {
+      margin-top: 0;
+      margin-bottom: 12px;
     }
 
     label {
@@ -84,15 +49,91 @@
       font-weight: bold;
     }
 
-    h1, h2 {
-      margin-top: 0;
+    textarea {
+      width: 100%;
+      height: 160px;
+      padding: 12px;
+      font-size: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      resize: vertical;
+      box-sizing: border-box;
+      font-family: inherit;
+      background: #fff;
+    }
+
+    button {
+      margin-top: 12px;
+      padding: 10px 16px;
+      font-size: 16px;
+      border: none;
+      border-radius: 8px;
+      background: var(--blue);
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: var(--blue-dark);
+    }
+
+    .output {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--output-bg);
+      border-radius: 8px;
+      min-height: 40px;
+      overflow-x: auto;
     }
 
     .empty {
-      color: #6b7280;
+      color: var(--muted);
       font-style: italic;
       font-family: inherit;
       font-size: 16px;
+    }
+
+    .indexed-wrap {
+      display: inline-block;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    .index-grid {
+      display: grid;
+      grid-template-columns: repeat(var(--count), var(--cell-width));
+      justify-content: start;
+      align-items: center;
+      width: max-content;
+      white-space: nowrap;
+    }
+
+    .char-row {
+      margin-bottom: 10px; /* extra visual spacing before the numbers */
+    }
+
+    .cell {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      font-family: "Courier New", Courier, monospace;
+      width: 100%;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .char-cell {
+      font-size: 22px;
+      font-weight: 600;
+      color: #111827;
+      min-height: 1.4em;
+    }
+
+    .num-cell {
+      font-size: 13px;
+      color: var(--num);
+      min-height: 1.2em;
     }
   </style>
 </head>
@@ -137,7 +178,7 @@ HAUIOK"></textarea>
       const lines = raw.split(/\r?\n/).filter(line => line.length > 0);
 
       if (lines.length === 0) {
-        document.getElementById("output2").innerHTML = '<span class="empty"></span>';
+        document.getElementById("output2").innerHTML = '<span class="empty">Nothing to show yet.</span>';
         return;
       }
 
@@ -157,25 +198,32 @@ HAUIOK"></textarea>
     function renderWithIndexes(text, outputId) {
       const output = document.getElementById(outputId);
 
-      if (!text) {
-        output.innerHTML = '<span class="empty"></span>';
+      if (!text || text.length === 0) {
+        output.innerHTML = '<span class="empty">Nothing to show yet.</span>';
         return;
       }
 
-      let charLine = '<div class="char-line">';
-      let numLine = '<div class="num-line">';
+      const count = text.length;
+      const digits = String(count).length;
+
+      // Give each character enough width to center both the character and its index.
+      // This stays flexible for 1-digit, 2-digit, and 3-digit indexes.
+      const cellWidth = Math.max(2.2, digits + 0.8);
+
+      let charRow = '<div class="index-grid char-row" style="--count:' + count + '; --cell-width:' + cellWidth + 'ch;">';
+      let numRow = '<div class="index-grid" style="--count:' + count + '; --cell-width:' + cellWidth + 'ch;">';
 
       for (let i = 0; i < text.length; i++) {
         const ch = text[i];
         const displayChar = ch === " " ? "&nbsp;" : escapeHtml(ch);
-        charLine += `<span class="char-cell">${displayChar}</span>`;
-        numLine += `<span class="num-cell">${i + 1}</span>`;
+        charRow += `<div class="cell char-cell">${displayChar}</div>`;
+        numRow += `<div class="cell num-cell">${i + 1}</div>`;
       }
 
-      charLine += "</div>";
-      numLine += "</div>";
+      charRow += "</div>";
+      numRow += "</div>";
 
-      output.innerHTML = charLine + numLine;
+      output.innerHTML = `<div class="indexed-wrap">${charRow}${numRow}</div>`;
     }
 
     function escapeHtml(str) {

@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Letter Extractor</title>
+  <title>Text Tools</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 700px;
+      max-width: 800px;
       margin: 40px auto;
       padding: 20px;
       background: #f7f7f7;
@@ -18,11 +18,12 @@
       padding: 20px;
       border-radius: 12px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
     }
 
     textarea {
       width: 100%;
-      height: 180px;
+      height: 160px;
       padding: 12px;
       font-size: 16px;
       border: 1px solid #ccc;
@@ -62,24 +63,70 @@
       margin-bottom: 8px;
       font-weight: bold;
     }
+
+    h1, h2 {
+      margin-top: 0;
+    }
   </style>
 </head>
 <body>
   <div class="card">
     <h1>Letter Extractor</h1>
     <label for="inputText">Enter text:</label>
-    <textarea id="inputText" placeholder="Paste your text here..."></textarea>
+    <textarea id="inputText" placeholder="Example:
+A:
+B:
+C:
+D:
+E:
+F:
+A:F:G:E:C:"></textarea>
     <br />
-    <button onclick="extractLetters()">Extract</button>
+    <button onclick="extractLetters()">Extract A-D before colon</button>
+    <div class="output" id="output1"></div>
+  </div>
 
-    <div class="output" id="output"></div>
+  <div class="card">
+    <h2>Line Comparator</h2>
+    <label for="compareText">Enter lines to compare:</label>
+    <textarea id="compareText" placeholder="Example:
+HAUIOK
+HABIOK
+HAUIOK"></textarea>
+    <br />
+    <button onclick="compareLines()">Compare lines</button>
+    <div class="output" id="output2"></div>
   </div>
 
   <script>
     function extractLetters() {
       const text = document.getElementById("inputText").value;
       const matches = text.match(/[A-D](?=:)/g) || [];
-      document.getElementById("output").textContent = matches.join("");
+      document.getElementById("output1").textContent = matches.join("");
+    }
+
+    function compareLines() {
+      const raw = document.getElementById("compareText").value;
+      const lines = raw.split(/\r?\n/).filter(line => line.length > 0);
+
+      if (lines.length === 0) {
+        document.getElementById("output2").textContent = "";
+        return;
+      }
+
+      const maxLen = Math.max(...lines.map(line => line.length));
+      let result = "";
+
+      for (let i = 0; i < maxLen; i++) {
+        const chars = lines.map(line => line[i]);
+
+        const first = chars[0];
+        const allMatch = chars.every(ch => ch === first && ch !== undefined);
+
+        result += allMatch ? first : "E";
+      }
+
+      document.getElementById("output2").textContent = result;
     }
   </script>
 </body>

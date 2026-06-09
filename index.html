@@ -7,7 +7,7 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 800px;
+      max-width: 900px;
       margin: 40px auto;
       padding: 20px;
       background: #f7f7f7;
@@ -30,6 +30,7 @@
       border-radius: 8px;
       resize: vertical;
       box-sizing: border-box;
+      font-family: inherit;
     }
 
     button {
@@ -52,10 +53,29 @@
       padding: 12px;
       background: #eef2ff;
       border-radius: 8px;
-      font-size: 20px;
-      letter-spacing: 1px;
       min-height: 28px;
-      word-break: break-word;
+      overflow-x: auto;
+    }
+
+    .char-line, .num-line {
+      display: flex;
+      gap: 0;
+      white-space: pre;
+      font-family: monospace;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .num-line {
+      font-size: 14px;
+      color: #4b5563;
+      margin-top: 4px;
+    }
+
+    .char-cell, .num-cell {
+      width: 1ch;
+      text-align: center;
+      flex: 0 0 1ch;
     }
 
     label {
@@ -66,6 +86,13 @@
 
     h1, h2 {
       margin-top: 0;
+    }
+
+    .empty {
+      color: #6b7280;
+      font-style: italic;
+      font-family: inherit;
+      font-size: 16px;
     }
   </style>
 </head>
@@ -102,7 +129,7 @@ HAUIOK"></textarea>
     function extractLetters() {
       const text = document.getElementById("inputText").value;
       const matches = text.match(/[A-D](?=:)/g) || [];
-      document.getElementById("output1").textContent = matches.join("");
+      renderWithIndexes(matches.join(""), "output1");
     }
 
     function compareLines() {
@@ -110,7 +137,7 @@ HAUIOK"></textarea>
       const lines = raw.split(/\r?\n/).filter(line => line.length > 0);
 
       if (lines.length === 0) {
-        document.getElementById("output2").textContent = "";
+        document.getElementById("output2").innerHTML = '<span class="empty"></span>';
         return;
       }
 
@@ -119,14 +146,45 @@ HAUIOK"></textarea>
 
       for (let i = 0; i < maxLen; i++) {
         const chars = lines.map(line => line[i]);
-
         const first = chars[0];
         const allMatch = chars.every(ch => ch === first && ch !== undefined);
-
         result += allMatch ? first : "E";
       }
 
-      document.getElementById("output2").textContent = result;
+      renderWithIndexes(result, "output2");
+    }
+
+    function renderWithIndexes(text, outputId) {
+      const output = document.getElementById(outputId);
+
+      if (!text) {
+        output.innerHTML = '<span class="empty"></span>';
+        return;
+      }
+
+      let charLine = '<div class="char-line">';
+      let numLine = '<div class="num-line">';
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const displayChar = ch === " " ? "&nbsp;" : escapeHtml(ch);
+        charLine += `<span class="char-cell">${displayChar}</span>`;
+        numLine += `<span class="num-cell">${i + 1}</span>`;
+      }
+
+      charLine += "</div>";
+      numLine += "</div>";
+
+      output.innerHTML = charLine + numLine;
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
     }
   </script>
 </body>
